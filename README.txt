@@ -2,10 +2,17 @@ An Arduino library to tokenize and parse commands received over a serial port.
 
 Initially documented here: http://awtfy.com/2011/05/23/a-minimal-arduino-library-for-processing-serial-commands/
 
-An alternate version of this library is available as https://github.com/kroimon/Arduino-SerialCommand 
+This version supports multi-channel serial (Serial, Serial1, Serial2, Serial3 on Arduino Mega for example).  Default to Serial0, but supports instantiation with alternate hardware serial interfaces.  Callbacks receive a pointer to the command interface from which it can retrieve the serial port on which the event arose.
 
-This version is the one on Github. 
+Version History:
+July 2016 - Forked from here: https://github.com/scogswell/ArduinoSerialCommand
+July 2016 - Support for multi-channel hardware serial on Arduino Mega
 
+
+
+
+
+Original History:
 /******************************************************************************* 
 SerialCommand - An Arduino library to tokenize and parse commands received over
 a serial port. 

@@ -64,7 +64,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 
 #define SERIALCOMMANDBUFFER 16
-#define MAXSERIALCOMMANDS	10
+#define MAXSERIALCOMMANDS	16
 #define MAXDELIMETER 2
 
 #define SERIALCOMMANDDEBUG 1
@@ -73,7 +73,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 class SerialCommand
 {
 	public:
-		SerialCommand();      // Constructor
+		SerialCommand();      // Constructor, use default Serial0 Hardware Serial object
+		SerialCommand(HardwareSerial &HardSer); // Constructor for using HardwareSerial objects
 		#ifndef SERIALCOMMAND_HARDWAREONLY
 		SerialCommand(SoftwareSerial &SoftSer);  // Constructor for using SoftwareSerial objects
 		#endif
@@ -81,8 +82,9 @@ class SerialCommand
 		void clearBuffer();   // Sets the command buffer to all '\0' (nulls)
 		char *next();         // returns pointer to next token found in command buffer (for getting arguments to commands)
 		void readSerial();    // Main entry point.  
-		void addCommand(const char *, void(*)());   // Add commands to processing dictionary
-		void addDefaultHandler(void (*function)());    // A handler to call when no valid command received. 
+		void addCommand(const char *, void(*)(SerialCommand*));   // Add commands to processing dictionary
+		void addDefaultHandler(void(*function)(SerialCommand*));    // A handler to call when no valid command received.
+		HardwareSerial* GetHardwareSerial(void);
 	
 	private:
 		char inChar;          // A character read from the serial stream 
@@ -94,12 +96,13 @@ class SerialCommand
 		char *last;                         // State variable used by strtok_r during processing
 		typedef struct _callback {
 			char command[SERIALCOMMANDBUFFER];
-			void (*function)();
+			void(*function)(SerialCommand*);
 		} SerialCommandCallback;            // Data structure to hold Command/Handler function key-value pairs
 		int numCommand;
 		SerialCommandCallback CommandList[MAXSERIALCOMMANDS];   // Actual definition for command/handler array
-		void (*defaultHandler)();           // Pointer to the default handler function 
+		void(*defaultHandler)(SerialCommand*);           // Pointer to the default handler function 
 		int usingSoftwareSerial;            // Used as boolean to see if we're using SoftwareSerial object or not
+		HardwareSerial *HardSerial;         // Pointer to a specific HardwareSerial object
 		#ifndef SERIALCOMMAND_HARDWAREONLY 
 		SoftwareSerial *SoftSerial;         // Pointer to a user-created SoftwareSerial object
 		#endif

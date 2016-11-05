@@ -123,7 +123,7 @@ void SerialCommand::addCommand(const char *command, void(*function)(SerialComman
 		_serial->print("Adding command for "); 
 		_serial->println(command); 
 		#endif
-		
+
 		strncpy(CommandList[_numCommand].command,command,SERIALCOMMANDBUFFER); 
 		CommandList[_numCommand].function = function; 
 		_numCommand++; 

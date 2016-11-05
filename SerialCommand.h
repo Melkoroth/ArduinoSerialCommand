@@ -54,9 +54,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 class SerialCommand
 {
 	public:
-		SerialCommand(const Stream *ser = &Serial);      // Constructor, use default Serial0 Hardware Serial object
-		SerialCommand(const SerialCommand&);
-		SerialCommand& operator=(const SerialCommand&);
+		SerialCommand(const Stream* = &Serial);      // Constructor, use default Serial0 Hardware Serial object
 
 		void clear_buffer();   // Sets the command _buffer to all '\0' (nulls)
 		char* next();         // returns pointer to next _token found in command _buffer (for getting arguments to commands)

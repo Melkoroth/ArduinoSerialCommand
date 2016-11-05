@@ -1,5 +1,5 @@
 /******************************************************************************* 
-SerialCommand - An Arduino library to tokenize and parse commands received over
+SerialCommand - An Arduino library to _tokenize and parse commands received over
 a serial port. 
 Copyright (C) 2011-2013 Steven Cogswell  <steven.cogswell@gmail.com>
 http://awtfy.com
@@ -19,7 +19,7 @@ Oct 2013 - Conditional compilation for the SoftwareSerial support, in case you r
            hate it and want it removed.  
 
 This library is free software; you can redistribute it and/or
-modify it under the terms of the GNU Lesser General Public
+modify it under the _terms of the GNU Lesser General Public
 License as published by the Free Software Foundation; either
 version 2.1 of the License, or (at your option) any later version.
 
@@ -41,27 +41,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include "WProgram.h"
 #endif
 
-// If you want to use SerialCommand with the hardware serial port only, and want to disable
-// SoftwareSerial support, and thus don't have to use "#include <SoftwareSerial.h>" in your
-// sketches, then uncomment this define for SERIALCOMMAND_HARDWAREONLY, and comment out the 
-// corresponding #undef line.  
-//
-// You don't have to use SoftwareSerial features if this is not defined, you can still only use 
-// the Hardware serial port, just that this way lets you get out of having to include 
-// the SoftwareSerial.h header. 
-//#define SERIALCOMMAND_HARDWAREONLY 1
-#undef SERIALCOMMAND_HARDWAREONLY
-
-#ifdef SERIALCOMMAND_HARDWAREONLY
-#warning "Warning: Building SerialCommand without SoftwareSerial Support"
-#endif
-
-#ifndef SERIALCOMMAND_HARDWAREONLY 
-#include <SoftwareSerial.h>  
-#endif
-
+#include <Stream.h>
 #include <string.h>
-
 
 #define SERIALCOMMANDBUFFER 16
 #define MAXSERIALCOMMANDS	16
@@ -73,39 +54,34 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 class SerialCommand
 {
 	public:
-		SerialCommand();      // Constructor, use default Serial0 Hardware Serial object
-		SerialCommand(HardwareSerial &HardSer); // Constructor for using HardwareSerial objects
-		#ifndef SERIALCOMMAND_HARDWAREONLY
-		SerialCommand(SoftwareSerial &SoftSer);  // Constructor for using SoftwareSerial objects
-		#endif
+		SerialCommand(const Stream *ser = &Serial);      // Constructor, use default Serial0 Hardware Serial object
+		SerialCommand(const SerialCommand&);
+		SerialCommand& operator=(const SerialCommand&);
 
-		void clearBuffer();   // Sets the command buffer to all '\0' (nulls)
-		char *next();         // returns pointer to next token found in command buffer (for getting arguments to commands)
+		void clear_buffer();   // Sets the command _buffer to all '\0' (nulls)
+		char* next();         // returns pointer to next _token found in command _buffer (for getting arguments to commands)
 		void readSerial();    // Main entry point.  
 		void addCommand(const char *, void(*)(SerialCommand*));   // Add commands to processing dictionary
 		void addDefaultHandler(void(*function)(SerialCommand*));    // A handler to call when no valid command received.
-		HardwareSerial* GetHardwareSerial(void);
 	
 	private:
-		char inChar;          // A character read from the serial stream 
-		char buffer[SERIALCOMMANDBUFFER];   // Buffer of stored characters while waiting for terminator character
-		int  bufPos;                        // Current position in the buffer
-		char delim[MAXDELIMETER];           // null-terminated list of character to be used as delimeters for tokenizing (default " ")
-		char term;                          // Character that signals end of command (default '\r')
-		char *token;                        // Returned token from the command buffer as returned by strtok_r
-		char *last;                         // State variable used by strtok_r during processing
+		char _inChar;          // A character read from the serial stream 
+		char _buffer[SERIALCOMMANDBUFFER];   // _buffer of stored characters while waiting for _terminator character
+		int  _buffPos;                        // Current position in the _buffer
+		char _delim[MAXDELIMETER];           // null-_terminated list of character to be used as _delimeters for _tokenizing (default " ")
+		char _term;                          // Character that signals end of command (default '\r')
+		char* _token;                        // Returned _token from the command _buffer as returned by strtok_r
+		char* _last;                         // State variable used by strtok_r during processing
+
 		typedef struct _callback {
 			char command[SERIALCOMMANDBUFFER];
 			void(*function)(SerialCommand*);
 		} SerialCommandCallback;            // Data structure to hold Command/Handler function key-value pairs
-		int numCommand;
+
+		int _numCommand;
 		SerialCommandCallback CommandList[MAXSERIALCOMMANDS];   // Actual definition for command/handler array
 		void(*defaultHandler)(SerialCommand*);           // Pointer to the default handler function 
-		int usingSoftwareSerial;            // Used as boolean to see if we're using SoftwareSerial object or not
-		HardwareSerial *HardSerial;         // Pointer to a specific HardwareSerial object
-		#ifndef SERIALCOMMAND_HARDWAREONLY 
-		SoftwareSerial *SoftSerial;         // Pointer to a user-created SoftwareSerial object
-		#endif
+		Stream *_serial;
 };
 
 #endif //SerialCommand_h

@@ -1,5 +1,5 @@
 /******************************************************************************* 
-SerialCommand - An Arduino library to tokenize and parse commands received over
+SerialCommand - An Arduino library to _tokenize and parse commands received over
 a serial port. 
 Copyright (C) 2011-2013 Steven Cogswell  <steven.cogswell@gmail.com>
 http://awtfy.com
@@ -7,7 +7,7 @@ http://awtfy.com
 See SerialCommand.h for version history. 
 
 This library is free software; you can redistribute it and/or
-modify it under the terms of the GNU Lesser General Public
+modify it under the _terms of the GNU Lesser General Public
 License as published by the Free Software Foundation; either
 version 2.1 of the License, or (at your option) any later version.
 
@@ -21,181 +21,118 @@ License along with this library; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 ***********************************************************************************/
 
-#if defined(ARDUINO) && ARDUINO >= 100
-#include "Arduino.h"
-#else
-#include "WProgram.h"
-#endif
-
 #include "SerialCommand.h"
 
-
-#include <string.h>
-#ifndef SERIALCOMMAND_HARDWAREONLY
-#include <SoftwareSerial.h>
-#endif
-
 // Constructor makes sure some things are set. 
-SerialCommand::SerialCommand()
+SerialCommand::SerialCommand(const Stream *ser) : _serial(ser), _term('\r'), _numCommand(0)
 {
-	usingSoftwareSerial=0;
-	HardSerial = &Serial;
-	strncpy(delim," ",MAXDELIMETER);  // strtok_r needs a null-terminated string
-	term='\r';   // return character, default terminator for commands
-	numCommand=0;    // Number of callback handlers installed
-	clearBuffer(); 
-}
-
-// Constructor to use a SoftwareSerial object
-SerialCommand::SerialCommand(HardwareSerial &_HardSer)
-{
-	usingSoftwareSerial = 0;
-	HardSerial = &_HardSer;
-	strncpy(delim, " ", MAXDELIMETER);  // strtok_r needs a null-terminated string
-	term = '\r';   // return character, default terminator for commands
-	numCommand = 0;    // Number of callback handlers installed
-	clearBuffer();
-}
-
-#ifndef SERIALCOMMAND_HARDWAREONLY
-// Constructor to use a SoftwareSerial object
-SerialCommand::SerialCommand(SoftwareSerial &_SoftSer)
-{
-	usingSoftwareSerial=1; 
-	SoftSerial = &_SoftSer;
-	HardSerial = 0;
-	strncpy(delim," ",MAXDELIMETER);  // strtok_r needs a null-terminated string
-	term='\r';   // return character, default terminator for commands
-	numCommand=0;    // Number of callback handlers installed
-	clearBuffer(); 
-}
-#endif
-
-HardwareSerial* SerialCommand::GetHardwareSerial(void)
-{
-	if (0 != HardSerial)
-	{
-		return HardSerial;
-	}
-
-	return &Serial;
+	strncpy(_delim, " ", MAXDELIMETER);  // strtok_r needs a null-_terminated string
+	clear_buffer(); 
 }
 
 //
-// Initialize the command buffer being processed to all null characters
+// Initialize the command _buffer being processed to all null characters
 //
-void SerialCommand::clearBuffer()
+void SerialCommand::clear_buffer()
 {
-	for (int i=0; i<SERIALCOMMANDBUFFER; i++) 
+	for (int i = 0; i < SERIALCOMMANDBUFFER; i++) 
 	{
-		buffer[i]='\0';
+		_buffer[i] = '\0';
 	}
-	bufPos=0; 
+	_buffPos = 0; 
 }
 
-// Retrieve the next token ("word" or "argument") from the Command buffer.  
-// returns a NULL if no more tokens exist.   
-char *SerialCommand::next() 
+// Retrieve the next _token ("word" or "argument") from the Command _buffer.  
+// returns a NULL if no more _tokens exist.   
+char* SerialCommand::next() 
 {
-	char *nextToken;
-	nextToken = strtok_r(NULL, delim, &last); 
-	return nextToken; 
+	char *next_token;
+	next_token = strtok_r(NULL, _delim, &_last); 
+	return next_token; 
 }
 
-// This checks the Serial stream for characters, and assembles them into a buffer.  
-// When the terminator character (default '\r') is seen, it starts parsing the 
-// buffer for a prefix command, and calls handlers setup by addCommand() member
+// This checks the Serial stream for characters, and assembles them into a _buffer.  
+// When the _terminator character (default '\r') is seen, it starts parsing the 
+// _buffer for a prefix command, and calls handlers setup by addCommand() member
 void SerialCommand::readSerial() 
 {
-	// If we're using the Hardware port, check it.   Otherwise check the user-created SoftwareSerial Port
-	#ifdef SERIALCOMMAND_HARDWAREONLY
-	while (HardSerial->available() > 0) 
-	#else
-	while ((usingSoftwareSerial==0 && HardSerial->available() > 0) || (usingSoftwareSerial==1 && SoftSerial->available() > 0) )
-	#endif
+	while (_serial->available() > 0)
 	{
 		int i; 
 		boolean matched; 
-		if (usingSoftwareSerial==0) {
-			// Hardware serial port
-			inChar=HardSerial->read();   // Read single available character, there may be more waiting
-		} else {
-			#ifndef SERIALCOMMAND_HARDWAREONLY
-			// SoftwareSerial port
-			inChar = SoftSerial->read();   // Read single available character, there may be more waiting
-			#endif
-		}
+		_inChar = _serial->read();
 		#ifdef SERIALCOMMANDDEBUG
-		HardSerial->print(inChar);   // Echo back to serial stream
+		_serial->print(_inChar);   // Echo back to serial stream
 		#endif
-		if (inChar==term) {     // Check for the terminator (default '\r') meaning end of command
+		if (_inChar ==_term) {     // Check for the _terminator (default '\r') meaning end of command
 			#ifdef SERIALCOMMANDDEBUG
-			HardSerial->print("Received: "); 
-			HardSerial->println(buffer);
+			_serial->println();
+			_serial->print("Received: "); 
+			_serial->println(_buffer);
 		    #endif
-			bufPos=0;           // Reset to start of buffer
-			token = strtok_r(buffer,delim,&last);   // Search for command at start of buffer
-			if (token == NULL) return; 
-			matched=false; 
-			for (i=0; i<numCommand; i++) {
+			_buffPos = 0;           // Reset to start of _buffer
+			_token = strtok_r(_buffer, _delim, &_last);   // Search for command at start of _buffer
+			if (_token == NULL) return; 
+			matched = false; 
+			for (i = 0; i <_numCommand; i++) {
 				#ifdef SERIALCOMMANDDEBUG
-				HardSerial->print("Comparing ["); 
-				HardSerial->print(token); 
-				HardSerial->print("] to [");
-				HardSerial->print(CommandList[i].command);
-				HardSerial->println("]");
+				_serial->print("Comparing ["); 
+				_serial->print(_token); 
+				_serial->print("] to [");
+				_serial->print(CommandList[i].command);
+				_serial->println("]");
 				#endif
 				// Compare the found command against the list of known commands for a match
-				if (strncmp(token,CommandList[i].command,SERIALCOMMANDBUFFER) == 0) 
+				if (strncmp(_token,CommandList[i].command,SERIALCOMMANDBUFFER) == 0) 
 				{
 					#ifdef SERIALCOMMANDDEBUG
-					HardSerial->print("Matched Command: "); 
-					HardSerial->println(token);
+					_serial->print("Matched Command: "); 
+					_serial->println(_token);
 					#endif
 					// Execute the stored handler function for the command
 					(*CommandList[i].function)(this); 
-					clearBuffer(); 
-					matched=true; 
+					clear_buffer(); 
+					matched = true; 
 					break; 
 				}
 			}
-			if (matched==false) {
+			if (matched == false) {
 				(*defaultHandler)(this); 
-				clearBuffer(); 
+				clear_buffer(); 
 			}
-
 		}
-		if (isprint(inChar))   // Only printable characters into the buffer
+		if (isprint(_inChar))   // Only printable characters into the _buffer
 		{
-			buffer[bufPos++]=inChar;   // Put character into buffer
-			buffer[bufPos]='\0';  // Null terminate
-			if (bufPos > SERIALCOMMANDBUFFER-1) bufPos=0; // wrap buffer around if full  
+			_buffer[_buffPos++] = _inChar;   // Put character into _buffer
+			_buffer[_buffPos] = '\0';  // Null _terminate
+			if (_buffPos > SERIALCOMMANDBUFFER-1) 
+				_buffPos = 0; // wrap _buffer around if full  
 		}
 	}
 }
 
 // Adds a "command" and a handler function to the list of available commands.  
-// This is used for matching a found token in the buffer, and gives the pointer
+// This is used for matching a found _token in the _buffer, and gives the pointer
 // to the handler function to deal with it. 
 void SerialCommand::addCommand(const char *command, void(*function)(SerialCommand*))
 {
-	if (numCommand < MAXSERIALCOMMANDS) {
+	if (_numCommand < MAXSERIALCOMMANDS) {
 		#ifdef SERIALCOMMANDDEBUG
-		HardSerial->print(numCommand); 
-		HardSerial->print("-"); 
-		HardSerial->print("Adding command for "); 
-		HardSerial->println(command); 
+		_serial->print(_numCommand); 
+		_serial->print("-"); 
+		_serial->print("Adding command for "); 
+		_serial->println(command); 
 		#endif
 		
-		strncpy(CommandList[numCommand].command,command,SERIALCOMMANDBUFFER); 
-		CommandList[numCommand].function = function; 
-		numCommand++; 
+		strncpy(CommandList[_numCommand].command,command,SERIALCOMMANDBUFFER); 
+		CommandList[_numCommand].function = function; 
+		_numCommand++; 
 	} else {
-		// In this case, you tried to push more commands into the buffer than it is compiled to hold.  
+		// In this case, you tried to push more commands into the _buffer than it is compiled to hold.  
 		// Not much we can do since there is no real visible error assertion, we just ignore adding
 		// the command
 		#ifdef SERIALCOMMANDDEBUG
-		HardSerial->println("Too many handlers - recompile changing MAXSERIALCOMMANDS"); 
+		_serial->println("Too many handlers - recompile changing MAXSERIALCOMMANDS"); 
 		#endif 
 	}
 }
